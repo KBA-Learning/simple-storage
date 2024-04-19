@@ -1,33 +1,83 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { instance } from './instance'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [input, setInput] = useState('')
+  const [output, setOutput] = useState('')
+
+  function handleChange(event) {
+    setInput(event.target.value)
+  }
+
+  async function setValue() {
+    try {
+      const trx = await instance.set(input)
+      console.log('Transaction Hash:', trx.hash)
+      if (trx) {
+        waitForReceipt(trx.hash)
+      } else {
+        alert('Failed to Set')
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  async function waitForReceipt(trx) {
+    let trxReceipt = null
+
+    while (!trxReceipt) {
+      try {
+        trxReceipt = await window.ethereum.request({
+          method: 'eth_getTransactionReceipt',
+          params: [trx],
+        })
+
+        if (!trxReceipt) {
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+        }
+      } catch (error) {
+        console.error('Error fetching transaction receipt:', error)
+      }
+    }
+
+    console.log('Receipt: ', trxReceipt)
+    alert('Set Successfully')
+  }
+
+  async function getValue() {
+    const result = await instance.get()
+    if (result) {
+      setOutput(result)
+    }
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="flex flex-col justify-center items-center h-screen">
+      <p className="font-bold text-2xl py-4">Sample Dapp</p>
+      <p className="font-bold text-xl py-4">Set Message</p>
+      <input
+        type="text"
+        onChange={handleChange}
+        className="border border-gray-400 py-4 px-6 rounded"
+        placeholder="Enter your Message"
+      ></input>
+      <br />
+      <button
+        onClick={setValue}
+        className="bg-blue-400 hover:bg-blue-700 rounded text-white py-2 px-6"
+      >
+        Set
+      </button>
+      <p className="font-bold text-xl py-4">Get Message</p>
+      <button
+        onClick={getValue}
+        className="bg-blue-400 hover:bg-blue-700 rounded text-white py-2 px-6"
+      >
+        Get
+      </button>
+      <p className="font-bold text-2xl py-4">{output}</p>
+    </div>
   )
 }
 
