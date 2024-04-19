@@ -1,16 +1,30 @@
 import { useState } from 'react'
-import { instance } from './instance'
+import { abi, contract } from './artifacts.json'
+import { BrowserProvider } from 'ethers'
+import { Contract } from 'ethers'
 
 function App() {
   const [input, setInput] = useState('')
+  const [account, setAccount] = useState('Connect to MetaMask')
   const [output, setOutput] = useState('')
+
+  const provider = new BrowserProvider(window.ethereum)
 
   function handleChange(event) {
     setInput(event.target.value)
   }
 
+  async function connectMetaMask() {
+    const signer = await provider.getSigner()
+
+    setAccount(signer.address)
+  }
+
   async function setValue() {
     try {
+      const signer = await provider.getSigner()
+      const instance = new Contract(contract, abi, signer)
+
       const trx = await instance.set(input)
       console.log('Transaction Hash:', trx.hash)
       if (trx) {
@@ -28,10 +42,7 @@ function App() {
 
     while (!trxReceipt) {
       try {
-        trxReceipt = await window.ethereum.request({
-          method: 'eth_getTransactionReceipt',
-          params: [trx],
-        })
+        trxReceipt = await provider.getTransactionReceipt(trx)
 
         if (!trxReceipt) {
           await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -46,6 +57,9 @@ function App() {
   }
 
   async function getValue() {
+    const signer = await provider.getSigner()
+    const instance = new Contract(contract, abi, signer)
+
     const result = await instance.get()
     if (result) {
       setOutput(result)
@@ -55,6 +69,12 @@ function App() {
   return (
     <div className="flex flex-col justify-center items-center h-screen">
       <p className="font-bold text-2xl py-4">Sample Dapp</p>
+      <button
+        onClick={connectMetaMask}
+        className="bg-blue-400 hover:bg-blue-700 rounded text-white py-2 px-6"
+      >
+        {account}
+      </button>
       <p className="font-bold text-xl py-4">Set Message</p>
       <input
         type="text"

@@ -31,13 +31,6 @@ Update **artifacts.json** with your abi and contract address.
 "contract":
 ```
 
-Update **instance.js** with your api url and private key.
-
-```js
-const provider = new JsonRpcProvider('<your-api-url>')
-const wallet = new Wallet('<your-private-key>', provider)
-```
-
 Start the application.
 
 ```bash
